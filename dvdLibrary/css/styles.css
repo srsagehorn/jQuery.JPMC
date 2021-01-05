@@ -70,6 +70,7 @@ tbody tr:nth-child(odd) {
   border: none;
   background-color: transparent;
   text-decoration: underline;
+  cursor: pointer;
 }
 
 textarea {

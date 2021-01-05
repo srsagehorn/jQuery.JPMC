@@ -1,5 +1,6 @@
 $(document).ready( function () {
-    validateSearch();
+    $("#edit").hide();
+    $("#movieInfo").hide()
     loadDvds();
 })
 
@@ -19,7 +20,7 @@ function loadDvds() {
                 var id = dvd.id;
                 
                 var row = '<tr>';
-                    row += '<td>' + title + '</td>';
+                    row += '<td class = "editDelete" onclick = "showMovie(' + id + ')">' + title + '</td>';
                     row += '<td>' + date + '</td>';
                     row += '<td>' + director + '</td>';
                     row += '<td>' + rating + '</td>';
@@ -38,24 +39,55 @@ function loadDvds() {
     }); 
 }
 
-function showEditForm (id) {
-    $("#editForm").show()
+function showEditForm(id) {
+    $("#edit").show()
     $("#main").hide()
+    $("#updateButton").text("Update")
+    $.ajax({
+        type: 'GET',
+        url: 'https://tsg-dvds.herokuapp.com/dvd/' + id,
+        success: function(dvd) {
+            $("#titleEdit").append(dvd.title);
+            $("#editTitle").val(dvd.title);
+            $("#editYear").val(dvd.releaseYear);
+            $("#editDirector").val(dvd.director);
+            $("#editRating").val(dvd.rating);
+            $("#editNotes").val(dvd.notes);
+            $("#updateButton").attr("onclick", "update(" + id + ")")
+        }
+    });
+}
+
+function showCreator() {
+    $("#edit").show()
+    $("#main").hide()
+    $("#titleEdit").text("Create a new DVD entry: ")
+    $("#editTitle").val("")
+    $("#editYear").val("")
+    $("#editDirector").val("")
+    $("#editRating").val("")
+    $("#editNotes").val("")
+    $("#updateButton").text("Create")
+    $("#updateButton").attr("onclick", "create()")
+}
+
+function hideEditForm() {
+    $(".line").html("")
+    $("#edit").hide()
+    $("#main").show()
 }
 
 function validateSearch() {
-    $("#line").html("")
+    $(".line").html("")
     let $search = $("#searchTerm").val()
     let $category = $("#categorySelect").val()
-    $("#searchBtn").on("click", function () {
-        console.log($search, $category)
-        if ($category == "default" || $search == "") {
-            $("#line").html(`<div class="alert alert-danger" role="alert">
-            Incorrect search inputs. You must select a category AND enter a search term.
-          </div>`)
-        }
+    console.log($search, $category)
+    if ($category === "default" || $search === "") {
+        $(".line").html(`<div class="alert alert-danger" role="alert">
+        Incorrect search inputs. You must select a category AND enter a search term.
+        </div>`)
+    }
         // else {}
-    })
 }
 
 function clearTable() {
@@ -71,6 +103,110 @@ function deleteDvd(dvdId) {
             success: function() {
                 loadDvds();
             }
-        });
+        })
     }
+}
+
+function validate() {
+    $(".line").html("")
+    let $title = $("#editTitle").val()
+    let $year = $("#editYear").val()
+    let $dir = $("#editDirector").val()
+    let $rate = $("#editRating").val()
+    let errors = 0
+    console.log($year.length)
+    if ($title == "" || $year == "" || $rate == "" || $dir == "") {
+        $(".line").html(`<div class="alert alert-danger" role="alert">
+            Incorrect search inputs. You cannot leave anything blank (Except notes)
+          </div>`)
+          errors++
+    }
+    if ( isNaN($year)|| $year.length != 4) {
+        $(".line").html(`<div class="alert alert-danger" role="alert">
+            The release date must be a four digit number
+          </div>`)
+          errors++
+    }
+
+    if (errors == 0) {
+        return true
+    }
+    else { return false }
+}
+
+function update(id) {
+    if (validate()) {
+        $.ajax({
+            type: 'PUT',
+            url: 'https://tsg-dvds.herokuapp.com/dvd/' + id,
+            data: JSON.stringify({
+                title: $('#editTitle').val(),
+                releaseYear: $('#editYear').val(),
+                director: $('#editDirector').val(),
+                rating: $('#editRating').val(),
+                notes: $('#editNotes').val()
+            }),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            success: function () {
+                loadDvds()
+                hideEditForm()
+            },
+            error: function () {
+                console.log("Error updating database")
+            }
+        })
+    }
+}
+
+function create() {
+    if (validate()) {
+        $.ajax({
+            type: 'POST',
+            url: 'https://tsg-dvds.herokuapp.com/dvd/',
+            data: JSON.stringify({
+                title: $('#editTitle').val(),
+                releaseYear: $('#editYear').val(),
+                director: $('#editDirector').val(),
+                rating: $('#editRating').val(),
+                notes: $('#editNotes').val()
+            }),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            success: function () {
+                loadDvds()
+                hideEditForm()
+            },
+            error: function () {
+                console.log("Error updating database")
+            }
+        })
+    }
+}
+
+function showMovie(id) {
+    $("#movieInfo").show()
+    $("#main").hide()
+    $.ajax({
+        type: 'GET',
+        url: 'https://tsg-dvds.herokuapp.com/dvd/' + id,
+        success: function(dvd) {
+            $("#titleMovie").append(dvd.title);
+            $("#movieTitle").text(dvd.title);
+            $("#movieYear").text(dvd.releaseYear);
+            $("#movieDirector").text(dvd.director);
+            $("#movieRating").text(dvd.rating);
+            $("#movieNotes").text(dvd.notes);
+            $("#updateButton").attr("onclick", "update(" + id + ")")
+        }
+    });
+}
+
+function hideMovieInfo () {
+    $("#movieInfo").hide()
+    $("#main").show()
 }
